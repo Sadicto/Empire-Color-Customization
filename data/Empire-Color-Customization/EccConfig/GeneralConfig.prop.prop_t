@@ -1,0 +1,6 @@
+# 0 Vanilla
+# 1 Base 
+# 2 Coat
+# 3 Detail
+# 4 Random
+int32 defaultEmpireColorRule 1

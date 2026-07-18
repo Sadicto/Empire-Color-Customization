@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<mod description="" displayName="Empire-Color-Customization" dllsBuild="$SPOREMOD_DLLS_BUILD" hasCustomInstaller="false" installerSystemVersion="1.0.1.2" isExperimental="$SPOREMOD_EXPERIMENTAL" unique="Empire-Color-Customization">
+<mod description="" displayName="Empire-Color-Customization" dllsBuild="$SPOREMOD_DLLS_BUILD" githubUrl="https://github.com/Sadicto/Empire-Color-Customization" hasCustomInstaller="false" installerSystemVersion="1.0.1.2" isExperimental="$SPOREMOD_EXPERIMENTAL" unique="Empire-Color-Customization" websiteUrl="https://github.com/Sadicto/Empire-Color-Customization">
   <prerequisite game="GalacticAdventures">Empire-Color-Customization.package</prerequisite>
+  <prerequisite>Empire-Color-Customization.dll</prerequisite>
 </mod>
