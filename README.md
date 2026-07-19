@@ -2,7 +2,6 @@
 This mod allows empires in the Space Stage to have any color, instead of repeating the same few as in vanilla.  
 It also adds a new cheat, empireColor, that gives players the ability to change the color of any empire.
 ### Features
-- Empires are no longer limited to a small pool of vanilla colors.
 - Adds the empireColor cheat command, which lets you change any empire's color to any RGB value.
 - AI empires themselves can get any color as their default, not just the handful vanilla reuses.
 - Custom colors are saved and persist across saves.
