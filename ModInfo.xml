@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<mod description="" displayName="Empire-Color-Customization" dllsBuild="$SPOREMOD_DLLS_BUILD" githubUrl="https://github.com/Sadicto/Empire-Color-Customization" hasCustomInstaller="false" installerSystemVersion="1.0.1.2" isExperimental="$SPOREMOD_EXPERIMENTAL" unique="Empire-Color-Customization" websiteUrl="https://github.com/Sadicto/Empire-Color-Customization">
-  <prerequisite game="GalacticAdventures">Empire-Color-Customization.package</prerequisite>
-  <prerequisite>Empire-Color-Customization.dll</prerequisite>
+<mod description="This mod allows empires in the Space Stage to have any color, instead of repeating the same few as in vanilla. It also implements a new cheat command, empireColor, that gives players more control over empire appearance by letting them change the color of any empire. Type help empireColor in the Spore console for more info. Requires UPE." displayName="Empire Color Customization" dllsBuild="$SPOREMOD_DLLS_BUILD" githubUrl="https://github.com/Sadicto/Empire-Color-Customization" hasCustomInstaller="true" installerSystemVersion="1.0.1.2" isExperimental="$SPOREMOD_EXPERIMENTAL" unique="Empire-Color-Customization" websiteUrl="https://github.com/Sadicto/Empire-Color-Customization">
+	<!-- DefaultEmpireColorRuleConfig -->
+	<componentGroup displayName="Default Empire Colors Configuration" unique="Empire-Color-Customization_DefaultEmpireColorRule_Config">
+		<component game="GalacticAdventures" displayName="Vanilla Default Color" description="Empires keep their original vanilla default colors" unique="Empire-Color-Customization_VanillaDefaultEmpireColorRule_Config" defaultChecked="false">Empire-Color-Customization_VanillaDefaultEmpireColorRule_Config.package</component>
+		<component game="GalacticAdventures" displayName="Creature Base Default Color" description="Empires will use the empire's creature base color as their default color" unique="Empire-Color-Customization_BaseDefaultEmpireColorRule_Config" defaultChecked="true">Empire-Color-Customization_BaseDefaultEmpireColorRule_Config.package</component>
+		<component game="GalacticAdventures" displayName="Creature Coat Default Color" description="Empires will use the empire's creature coat color as their default color" unique="Empire-Color-Customization_CoatDefaultEmpireColorRule_Config" defaultChecked="false">Empire-Color-Customization_CoatDefaultEmpireColorRule_Config.package</component>
+		<component game="GalacticAdventures" displayName="Creature Detail Default Color" description="Empires will use the empire's creature detail color as their default color" unique="Empire-Color-Customization_DetailDefaultEmpireColorRule_Config" defaultChecked="false">Empire-Color-Customization_DetailDefaultEmpireColorRule_Config.package</component>
+		<component game="GalacticAdventures" displayName="Random Default Color" description="Empires will use a completely random color as their default color" unique="Empire-Color-Customization_RandomDefaultEmpireColorRule_Config" defaultChecked="false">Empire-Color-Customization_RandomDefaultEmpireColorRule_Config.package</component>
+	</componentGroup>
+	<!-- Main -->
+	<prerequisite game="GalacticAdventures">Empire-Color-Customization_Main.package</prerequisite>
+	<prerequisite>Empire-Color-Customization.dll</prerequisite>
+	<remove game="GalacticAdventures">Empire-Color-Customization_Main.package</remove>
+	<remove>Empire-Color-Customization.dll</remove>
+	<!-- DefaultEmpireColorRuleConfig -->
+	<remove game="GalacticAdventures">Empire-Color-Customization_VanillaDefaultEmpireColorRule_Config.package</remove>
+	<remove game="GalacticAdventures">Empire-Color-Customization_BaseDefaultEmpireColorRule_Config.package</remove>
+	<remove game="GalacticAdventures">Empire-Color-Customization_CoatDefaultEmpireColorRule_Config.package</remove>
+	<remove game="GalacticAdventures">Empire-Color-Customization_DetailDefaultEmpireColorRule_Config.package</remove>
+	<remove game="GalacticAdventures">Empire-Color-Customization_RandomDefaultEmpireColorRule_Config.package</remove>
 </mod>

@@ -1,0 +1,6 @@
+string8s postinitList
+	"GeneralConfig GeneralConfig-DefaultEmpireColorRule"
+end
+
+key GeneralConfig EccConfig!GeneralConfig.prop
+key GeneralConfig-DefaultEmpireColorRule EccConfig!GeneralConfig-DefaultEmpireColorRule.prop
