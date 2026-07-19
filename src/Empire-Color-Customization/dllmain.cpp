@@ -8,7 +8,7 @@ using namespace Simulator;
 
 void Initialize()
 {
-	CheatManager.AddCheat("DebugEmpireColor", new DebugEmpireColor());
+	//CheatManager.AddCheat("DebugEmpireColor", new DebugEmpireColor());
 	CheatManager.AddCheat("empireColor", new EmpireColorCheat());
 	cSimulatorSystem::Get()->AddStrategy(new cEmpireColorManager(), cEmpireColorManager::NOUN_ID);
 	ClassManager.AddFactory(new cEmpireColorEntryFactory());

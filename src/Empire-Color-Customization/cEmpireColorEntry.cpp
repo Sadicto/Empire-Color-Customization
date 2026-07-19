@@ -41,8 +41,12 @@ bool cEmpireColorEntry::Write(Simulator::ISerializerStream* stream)
 }
 bool cEmpireColorEntry::Read(Simulator::ISerializerStream* stream)
 {
-	return Simulator::ClassSerializer(this, ATTRIBUTES).Read(stream);
-	empire = StarManager.GetEmpire(empireID);
+	auto ret = Simulator::ClassSerializer(this, ATTRIBUTES).Read(stream);
+	if (ret)
+	{
+		empire = StarManager.GetEmpire(empireID);
+	}
+	return ret;
 }
 
 bool cEmpireColorEntry::ISimulatorSerializable_func18h()
@@ -60,6 +64,11 @@ Simulator::Attribute cEmpireColorEntry::ATTRIBUTES[] = {
 	SimAttribute(cEmpireColorEntry, color, 1),
 	Simulator::Attribute()
 };
+
+uint32_t cEmpireColorEntry::GetEmpireID() const
+{
+	return empireID;
+}
 
 Math::ColorRGB cEmpireColorEntry::GetColor() const
 {
@@ -87,6 +96,11 @@ void cEmpireColorEntry::SetEmpire(cEmpire* empire)
 	{
 		this->empireID = 0;
 	}
+}
+
+ResourceKey cEmpireColorEntry::GetKey() const
+{
+	return ResourceKey(empireID, cEmpireColorEntry::TYPE, id("Empire_Color_Customization"));
 }
 
 bool cEmpireColorEntry::Valid() const

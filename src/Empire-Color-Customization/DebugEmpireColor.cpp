@@ -70,6 +70,8 @@ void DebugEmpireColor::ParseLine(const ArgScript::Line& line)
         break;
     }
     case 8: {
+        ResourceKey key(1, 2, 3);
+        ModAPI::Log("Error opening read stream for key %u %u %u", key.instanceID, key.groupID, key.typeID);
         break;
 
     }

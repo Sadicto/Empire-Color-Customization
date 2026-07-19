@@ -22,29 +22,102 @@ void cEmpireColorManager::OnModeExited(uint32_t previousModeID, uint32_t newMode
 {
 	if (previousModeID == GameModeIDs::kGameSpace)
 	{
-		if (!vanillaColorsBackup.empty())
+		if (!vanillaColorBackup.empty())
 		{
-			GetCachedColorIdMap() = vanillaColorsBackup;
-			vanillaColorsBackup.clear();
+			GetCachedColorIdMap() = vanillaColorBackup;
+			vanillaColorBackup.clear();
 		}
-		shouldBackupVanillaColors = true;
+		shouldBackupVanillaColor = true;
+		empireColorEntries.clear();
+		readDB = false;
+		empireColorDB.reset();
 	}
 }
 
 void cEmpireColorManager::OnModeEntered(uint32_t previousModeID, uint32_t newModeID)
 {
+	if (newModeID == GameModeIDs::kGameSpace)
+	{
+		if (!readDB)
+		{
+			// For some reason, cEmpireColorManager::Read does not execute sometimes when loading a save.
+			ReadDB();
+		}
 
+	}
 }
 
 bool cEmpireColorManager::Write(Simulator::ISerializerStream* stream)
 {
+	if (!IsSpaceGame())
+	{
+		return true;
+	}
+	if (empireColorDB == nullptr)
+	{
+		if (!InitializeDB())
+		{
+			ModAPI::Log("Error initializing db");
+			return false;
+		}
+	}
+	if (!empireColorDB->Open(IO::AccessFlags::Write, IO::CD::OpenAlways))
+	{
+		ModAPI::Log("Error opening db for Write");
+		return false;
+	}
+	auto it = empireColorEntries.begin();
+	while (it != empireColorEntries.end())
+	{
+		cEmpireColorEntry* colorEntry = it->second.get();
+		if (colorEntry == nullptr)
+		{
+			it = empireColorEntries.erase(it);
+			continue;
+		}
+		ISerializerWriteStream* writeStream = nullptr;
+		ResourceKey key = colorEntry->GetKey();
+		if (colorEntry->Valid())
+		{
+			if (!empireColorDB->OpenWriteStream(key, &writeStream, true))
+			{
+				ModAPI::Log("Error opening write stream for key %u %u %u", key.instanceID, key.groupID, key.typeID);
+				it++;
+				continue;
+			}
+			if (!colorEntry->Write(writeStream))
+			{
+				ModAPI::Log("Error writing key %u %u %u",
+					key.instanceID, key.groupID, key.typeID);
+			}
+			empireColorDB->CloseWriteStream(writeStream);
+			it++;
+		}
+		else
+		{
+			empireColorDB->DeleteRecord(key);
+			it = empireColorEntries.erase(it);
+		}
+	}
+	if (!empireColorDB->Flush())
+	{
+		ModAPI::Log("Error flushing db");
+	}
+	if (!empireColorDB->Close())
+	{
+		ModAPI::Log("Error closing db");
+		return false;
+	}
 	return Simulator::ClassSerializer(this, ATTRIBUTES).Write(stream);
-	// TODO write the valid color entries and delete the invalid from the map and the db.
 }
+
 bool cEmpireColorManager::Read(Simulator::ISerializerStream* stream)
 {
-	return Simulator::ClassSerializer(this, ATTRIBUTES).Read(stream);
-	// TODO read the empire color entries.
+	if (!readDB)
+	{
+		ReadDB();
+	}
+	return readDB && Simulator::ClassSerializer(this, ATTRIBUTES).Read(stream);
 }
 
 bool cEmpireColorManager::WriteToXML(XmlSerializer*)
@@ -64,22 +137,9 @@ Simulator::Attribute cEmpireColorManager::ATTRIBUTES[] = {
 void cEmpireColorManager::Initialize() {
 	instance = this;
 	defaultGroxColor = Math::ColorRGB(0.35f, 0.0f, 0.25f);
-	shouldBackupVanillaColors = true;
-	/*
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Neutral), Math::ColorRGB(0.500000000f, 0.500000000f, 0.500000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Brown), Math::ColorRGB(0.685000002f, 0.425000012f, 0.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Pink), Math::ColorRGB(0.878000021f, 0.000000000f, 1.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Cyan), Math::ColorRGB(0.000000000f, 1.000000000f, 0.878000021f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Green), Math::ColorRGB(0.474000007f, 0.870999992f, 0.0309999995f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Lavender), Math::ColorRGB(0.620000005f, 0.538999975f, 1.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Orange), Math::ColorRGB(1.000000000f, 0.662999988f, 0.172999993f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Yellow), Math::ColorRGB(1.000000000f, 1.000000000f, 0.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Red), Math::ColorRGB(1.000000000f, 0.0799999982f, 0.250000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Blue), Math::ColorRGB(0.000000000f, 0.460000008f, 1.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Forest), Math::ColorRGB(0.000000000f, 0.395000011f, 0.00899999961f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Crimson), Math::ColorRGB(0.561999977f, 0.000000000f, 0.000000000f));
-	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Purple), Math::ColorRGB(0.294000000f, 0.0799999982f, 0.879999995f));
-	*/
+	shouldBackupVanillaColor = true;
+	readDB = false;
+
 	PropertyListPtr managerConfigProp;
 	PropManager.GetPropertyList(id("GeneralConfig"), id("EccConfig"), managerConfigProp);
 	int defaultEmpireColorRuleInt;
@@ -102,6 +162,76 @@ cEmpireColorManager* cEmpireColorManager::Get() {
 EmpireColorRule cEmpireColorManager::GetDefaultEmpireColorRule() const
 {
 	return defaultEmpireColorRule;
+}
+
+bool cEmpireColorManager::InitializeDB()
+{
+	eastl::string16 path = Resource::Paths::GetSaveArea(Resource::SaveAreaID::GamesGame0)->GetLocation();
+	path += u"empireColorCustomizationDB";
+	DatabasePackedFilePtr db = new Resource::DatabasePackedFile(path.c_str());
+	if (db->Initialize())
+	{
+		empireColorDB = new SerializerDatabase(db.get());
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool cEmpireColorManager::ReadDB()
+{
+	if (!IsSpaceGame())
+	{
+		return true;
+	}
+	if (empireColorDB == nullptr)
+	{
+		if (!InitializeDB())
+		{
+			ModAPI::Log("Error initializing db");
+			return false;
+		}
+	}
+	empireColorEntries.clear();
+	// For some reason, opening it in read-only mode always fails.
+	if (!empireColorDB->Open(IO::AccessFlags::ReadWrite, IO::CD::OpenAlways))
+	{
+		ModAPI::Log("Error opening db for ReadWrite");
+		return false;
+	}
+	eastl::vector<ResourceKey> keys;
+	Resource::StandardFileFilter filter(ResourceKey::kWildcardID, id("Empire_Color_Customization"), cEmpireColorEntry::TYPE);
+	empireColorDB->GetKeyList(keys, &filter);
+	for (const ResourceKey& key : keys)
+	{
+		cEmpireColorEntryPtr colorEntry = object_cast<cEmpireColorEntry>(ClassManager.Create(cEmpireColorEntry::NOUN_ID));
+		ISerializerReadStream* readStream = nullptr;
+		if (!empireColorDB->OpenReadStream(key, &readStream))
+		{
+			ModAPI::Log("Error opening read stream for key %u %u %u", key.instanceID, key.groupID, key.typeID);
+			continue;
+		}
+		bool success = colorEntry->Read(readStream);
+		empireColorDB->CloseReadStream(readStream);
+
+		if (!success)
+		{
+			ModAPI::Log("Error reading key %u %u %u",
+				key.instanceID, key.groupID, key.typeID);
+			continue;
+		}
+
+		empireColorEntries.emplace(colorEntry->GetEmpireID(), colorEntry);
+	}
+	if (!empireColorDB->Close())
+	{
+		ModAPI::Log("Error closing db");
+		return false;
+	}
+	readDB = true;
+	return true;
 }
 
 cEmpireColorEntry* cEmpireColorManager::GetEmpireColorEntry(uint32_t empireID) const
@@ -140,10 +270,11 @@ void cEmpireColorManager::SetEmpireColorEntry(Simulator::cEmpire* empire, Math::
 		}
 
 		colorEntry = object_cast<cEmpireColorEntry>(ClassManager.Create(cEmpireColorEntry::NOUN_ID));
-		if (colorEntry)
+		if (!colorEntry)
 		{
-			empireColorEntries.emplace(empire->GetEmpireID(), colorEntry);
+			return;
 		}
+		empireColorEntries.emplace(empire->GetEmpireID(), colorEntry);
 	}
 	colorEntry->SetColor(color);
 	colorEntry->SetEmpire(empire);
@@ -169,13 +300,16 @@ void cEmpireColorManager::DestroyEmpireColorEntries()
 
 void cEmpireColorManager::BackupVanillaColors()
 {
-	vanillaColorsBackup = GetCachedColorIdMap();
-	shouldBackupVanillaColors = false;
+	vanillaColorBackup = GetCachedColorIdMap();
+	shouldBackupVanillaColor = false;
 }
 
 Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 {
-	if (shouldBackupVanillaColors)
+	// CachedColorIdMap is also used by the other stages. Since changing empire
+	// colors modifies this map, we need to back it up before applying any changes
+	// and restore it when leaving the Space Stage.
+	if (shouldBackupVanillaColor)
 	{
 		BackupVanillaColors();
 	}
@@ -190,7 +324,7 @@ Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 	}
 	cSpeciesProfile* speciesProfile = empire->GetSpeciesProfile();
 
-	if (defaultEmpireColorRule != EmpireColorRule::vanilla && speciesProfile == nullptr)
+	if (speciesProfile == nullptr)
 	{
 		return Math::ColorRGB(1.0f, 1.0f, 1.0f);
 	}
@@ -218,8 +352,8 @@ Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 		}
 		else
 		{
-			auto it = vanillaColorsBackup.find(empire->mIDColorID);
-			if (it != vanillaColorsBackup.end())
+			auto it = vanillaColorBackup.find(empire->mIDColorID);
+			if (it != vanillaColorBackup.end())
 			{
 				color = it->second;
 			}
