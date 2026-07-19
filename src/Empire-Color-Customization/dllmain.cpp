@@ -23,10 +23,13 @@ void Dispose()
 member_detour(UpdateAndGetColor__detour, cEmpire, Math::ColorRGB*(Math::ColorRGB&)) {
 	Math::ColorRGB* detoured(Math::ColorRGB & outputColor) {
 		original_function(this, outputColor);
-		cEmpireColorManager* empireColorManager = cEmpireColorManager::Get();
-		if (this != nullptr && empireColorManager != nullptr && empireColorManager->GetDefaultEmpireColorRule() != EmpireColorRule::vanilla)
+		if (IsSpaceGame())
 		{
-			outputColor = empireColorManager->GetEmpireColor(this);
+			cEmpireColorManager* empireColorManager = cEmpireColorManager::Get();
+			if (this != nullptr && empireColorManager != nullptr)
+			{
+				outputColor = empireColorManager->GetEmpireColor(this);
+			}
 		}
 		return &outputColor;
 	}
@@ -40,9 +43,10 @@ static_detour(GetCachedColorFromId__detour, Math::ColorRGB*(uint32_t)) {
 		{
 			cEmpireColorManager* empireColorManager = cEmpireColorManager::Get();
 			cEmpire* starEmpire = StarManager.GetEmpire(GetActiveStarRecord()->mEmpireID);
-			if (starEmpire != nullptr && empireColorManager != nullptr && empireColorManager->GetDefaultEmpireColorRule() != EmpireColorRule::vanilla)
+			if (starEmpire != nullptr && empireColorManager != nullptr)
 			{
 				*ret = empireColorManager->GetEmpireColor(starEmpire);
+				
 			}
 		}
 		return ret;

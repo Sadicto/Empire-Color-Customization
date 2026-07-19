@@ -35,15 +35,17 @@ public:
 
 	static cEmpireColorManager* Get();
 
-	EmpireColorRule GetDefaultEmpireColorRule();
+	EmpireColorRule GetDefaultEmpireColorRule() const;
 
-	cEmpireColorEntry* GetEmpireColorEntry(uint32_t empireID);
+	cEmpireColorEntry* GetEmpireColorEntry(uint32_t empireID) const;
 
 	void SetEmpireColorEntry(Simulator::cEmpire* empire, Math::ColorRGB color);
 
 	void DestroyEmpireColorEntry(uint32_t empireID);
 
 	void DestroyEmpireColorEntries();
+
+	void BackupVanillaColors();
 
 	Math::ColorRGB GetEmpireColor(Simulator::cEmpire* empire);
 
@@ -55,5 +57,9 @@ private:
 	
 	EmpireColorRule defaultEmpireColorRule;
 
+	bool shouldBackupVanillaColors;
+
 	eastl::map<uint32_t, cEmpireColorEntryPtr> empireColorEntries;
+
+	eastl::map<uint32_t, Math::ColorRGB> vanillaColorsBackup;
 };

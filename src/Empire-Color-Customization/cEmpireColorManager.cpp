@@ -20,10 +20,20 @@ const char* cEmpireColorManager::GetName() const {
 
 void cEmpireColorManager::OnModeExited(uint32_t previousModeID, uint32_t newModeID)
 {
+	if (previousModeID == GameModeIDs::kGameSpace)
+	{
+		if (!vanillaColorsBackup.empty())
+		{
+			GetCachedColorIdMap() = vanillaColorsBackup;
+			vanillaColorsBackup.clear();
+		}
+		shouldBackupVanillaColors = true;
+	}
 }
 
 void cEmpireColorManager::OnModeEntered(uint32_t previousModeID, uint32_t newModeID)
 {
+
 }
 
 bool cEmpireColorManager::Write(Simulator::ISerializerStream* stream)
@@ -54,7 +64,22 @@ Simulator::Attribute cEmpireColorManager::ATTRIBUTES[] = {
 void cEmpireColorManager::Initialize() {
 	instance = this;
 	defaultGroxColor = Math::ColorRGB(0.35f, 0.0f, 0.25f);
-
+	shouldBackupVanillaColors = true;
+	/*
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Neutral), Math::ColorRGB(0.500000000f, 0.500000000f, 0.500000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Brown), Math::ColorRGB(0.685000002f, 0.425000012f, 0.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Pink), Math::ColorRGB(0.878000021f, 0.000000000f, 1.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Cyan), Math::ColorRGB(0.000000000f, 1.000000000f, 0.878000021f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Green), Math::ColorRGB(0.474000007f, 0.870999992f, 0.0309999995f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Lavender), Math::ColorRGB(0.620000005f, 0.538999975f, 1.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Orange), Math::ColorRGB(1.000000000f, 0.662999988f, 0.172999993f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Yellow), Math::ColorRGB(1.000000000f, 1.000000000f, 0.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Red), Math::ColorRGB(1.000000000f, 0.0799999982f, 0.250000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Blue), Math::ColorRGB(0.000000000f, 0.460000008f, 1.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Forest), Math::ColorRGB(0.000000000f, 0.395000011f, 0.00899999961f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Crimson), Math::ColorRGB(0.561999977f, 0.000000000f, 0.000000000f));
+	vanillaColorsBackup.emplace(uint32_t(IdentityColors::Purple), Math::ColorRGB(0.294000000f, 0.0799999982f, 0.879999995f));
+	*/
 	PropertyListPtr managerConfigProp;
 	PropManager.GetPropertyList(id("GeneralConfig"), id("EccConfig"), managerConfigProp);
 	int defaultEmpireColorRuleInt;
@@ -74,12 +99,12 @@ cEmpireColorManager* cEmpireColorManager::Get() {
 	return instance;
 }
 
-EmpireColorRule cEmpireColorManager::GetDefaultEmpireColorRule()
+EmpireColorRule cEmpireColorManager::GetDefaultEmpireColorRule() const
 {
 	return defaultEmpireColorRule;
 }
 
-cEmpireColorEntry* cEmpireColorManager::GetEmpireColorEntry(uint32_t empireID)
+cEmpireColorEntry* cEmpireColorManager::GetEmpireColorEntry(uint32_t empireID) const
 {
 	auto it = empireColorEntries.find(empireID);
 
@@ -97,7 +122,7 @@ void cEmpireColorManager::SetEmpireColorEntry(Simulator::cEmpire* empire, Math::
 	{
 		return;
 	}
-	cEmpireColorEntry* colorEntry;
+	cEmpireColorEntry* colorEntry = nullptr;
 	auto it = empireColorEntries.find(empire->GetEmpireID());
 
 	// empireColorEntry exist and it's valid.
@@ -115,7 +140,10 @@ void cEmpireColorManager::SetEmpireColorEntry(Simulator::cEmpire* empire, Math::
 		}
 
 		colorEntry = object_cast<cEmpireColorEntry>(ClassManager.Create(cEmpireColorEntry::NOUN_ID));
-		empireColorEntries.emplace(empire->GetEmpireID(), colorEntry);
+		if (colorEntry)
+		{
+			empireColorEntries.emplace(empire->GetEmpireID(), colorEntry);
+		}
 	}
 	colorEntry->SetColor(color);
 	colorEntry->SetEmpire(empire);
@@ -125,7 +153,7 @@ void cEmpireColorManager::DestroyEmpireColorEntry(uint32_t empireID)
 {
 	auto it = empireColorEntries.find(empireID);
 
-	if (it != empireColorEntries.end())
+	if (it != empireColorEntries.end() && it->second)
 	{
 		it->second->Destroy();
 	}
@@ -139,8 +167,18 @@ void cEmpireColorManager::DestroyEmpireColorEntries()
 	}
 }
 
+void cEmpireColorManager::BackupVanillaColors()
+{
+	vanillaColorsBackup = GetCachedColorIdMap();
+	shouldBackupVanillaColors = false;
+}
+
 Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 {
+	if (shouldBackupVanillaColors)
+	{
+		BackupVanillaColors();
+	}
 	if (empire == nullptr)
 	{
 		return Math::ColorRGB(1.0f, 1.0f, 1.0f);
@@ -152,7 +190,7 @@ Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 	}
 	cSpeciesProfile* speciesProfile = empire->GetSpeciesProfile();
 
-	if (speciesProfile == nullptr)
+	if (defaultEmpireColorRule != EmpireColorRule::vanilla && speciesProfile == nullptr)
 	{
 		return Math::ColorRGB(1.0f, 1.0f, 1.0f);
 	}
@@ -165,6 +203,34 @@ Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 
 	Math::ColorRGB color;
 	switch (defaultEmpireColorRule) {
+	case(EmpireColorRule::vanilla): {
+		// For empires from other saves, their vanilla color seems to always be `mCachedColor`.
+		if ((empire->mFlags & EmpireFlags::kEmpireFlagFromSaveGame) != 0 && empire != GetPlayerEmpire())
+		{
+			color = empire->mCachedColor;
+
+			// No idea if this can happen.
+			if (color.r == 0.0f && color.g == 0.0f && color.b == 0.0f)
+			{
+				// Defaults to coat color.
+				color = speciesProfile->mSkinColors[1];
+			}
+		}
+		else
+		{
+			auto it = vanillaColorsBackup.find(empire->mIDColorID);
+			if (it != vanillaColorsBackup.end())
+			{
+				color = it->second;
+			}
+			else
+			{
+				// Defaults to coat color.
+				color = speciesProfile->mSkinColors[1];
+			}
+		}
+		break;
+	}
 	case(EmpireColorRule::base): {
 		color = speciesProfile->mSkinColors[0];
 		break;

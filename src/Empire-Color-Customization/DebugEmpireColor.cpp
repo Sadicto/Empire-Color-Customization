@@ -55,6 +55,8 @@ void DebugEmpireColor::ParseLine(const ArgScript::Line& line)
         break;
     }
     case 5: {
+        eastl::map<uint32_t, Math::ColorRGB> map = GetCachedColorIdMap();
+        int h = 1;
         break;
     }
     case 6: {
