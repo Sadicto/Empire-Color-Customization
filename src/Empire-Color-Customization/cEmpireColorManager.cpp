@@ -298,6 +298,22 @@ void cEmpireColorManager::DestroyEmpireColorEntries()
 	}
 }
 
+Math::ColorRGB cEmpireColorManager::GetVanillaColor(uint32_t colorID)
+{
+	Math::ColorRGB color;
+	auto it = vanillaColorBackup.find(colorID);
+	if (it != vanillaColorBackup.end())
+	{
+		color = it->second;
+	}
+	else
+	{
+		// Defaults to white.
+		color = Math::ColorRGB(1.0f, 1.0f, 1.0f);
+	}
+	return color;
+}
+
 void cEmpireColorManager::BackupVanillaColors()
 {
 	vanillaColorBackup = GetCachedColorIdMap();
@@ -352,12 +368,9 @@ Math::ColorRGB cEmpireColorManager::GetEmpireColor(Simulator::cEmpire* empire)
 		}
 		else
 		{
-			auto it = vanillaColorBackup.find(empire->mIDColorID);
-			if (it != vanillaColorBackup.end())
-			{
-				color = it->second;
-			}
-			else
+			color = GetVanillaColor(empire->mIDColorID);
+			// If the color is white, then no color was found.
+			if (color.r == 1.0f && color.g == 1.0f && color.b == 1.0f)
 			{
 				// Defaults to coat color.
 				color = speciesProfile->mSkinColors[1];

@@ -72,6 +72,11 @@ public:
 	/// They will be removed the next time the database is written.
 	void DestroyEmpireColorEntries();
 
+	/// @brief Gets the vanilla color associated with colorID, as stored in vanillaColorBackup.
+	/// @param colorID The ID of the color.
+	/// @return The color associated with the ID, or white if the color is not found.
+	Math::ColorRGB GetVanillaColor(uint32_t colorID);
+
 	/// @brief Backs up the current CachedColorIdMap into vanillaColorBackup.
 	void BackupVanillaColors();
 

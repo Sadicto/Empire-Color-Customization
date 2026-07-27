@@ -42,11 +42,17 @@ static_detour(GetCachedColorFromId__detour, Math::ColorRGB*(uint32_t)) {
 		if (IsSpaceGame())
 		{
 			cEmpireColorManager* empireColorManager = cEmpireColorManager::Get();
-			cEmpire* starEmpire = StarManager.GetEmpire(GetActiveStarRecord()->mEmpireID);
+			cStarRecord* star = GetActiveStarRecord();
+			cEmpire* starEmpire = StarManager.GetEmpire(star->mEmpireID);
 			if (starEmpire != nullptr && empireColorManager != nullptr)
 			{
 				*ret = empireColorManager->GetEmpireColor(starEmpire);
 				
+			}
+			else if (empireColorManager != nullptr &&
+				(star->GetTechLevel() == TechLevel::Tribe || star->GetTechLevel() == TechLevel::Civilization))
+			{
+				*ret = empireColorManager->GetVanillaColor(colorID);
 			}
 		}
 		return ret;
